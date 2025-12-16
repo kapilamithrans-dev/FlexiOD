@@ -33,6 +33,7 @@ const studentMenuItems = [
   { title: "My Timetable", url: "/student/timetable", icon: Calendar },
   { title: "Submit OD Request", url: "/student/od-request", icon: FileText },
   { title: "My Requests", url: "/student/requests", icon: ClipboardCheck },
+  { title: "OD Utilization", url: "/student/od-usage", icon: ClipboardCheck },
 ];
 
 const staffMenuItems = [
@@ -48,6 +49,7 @@ const adminMenuItems = [
   { title: "Upload Mappings", url: "/admin/upload-mappings", icon: Users },
   { title: "Upload Staff Duty", url: "/admin/upload-duty", icon: Calendar },
   { title: "Manage Users", url: "/admin/users", icon: Settings },
+  { title: "Semester Settings", url: "/admin/semester-settings", icon: Settings },
 ];
 
 export function AppSidebar() {

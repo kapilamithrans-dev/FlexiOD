@@ -24,6 +24,9 @@ import UploadTimetables from "@/pages/admin/upload-timetables";
 import UploadMappings from "@/pages/admin/upload-mappings";
 import UploadDuty from "@/pages/admin/upload-duty";
 import ManageUsers from "@/pages/admin/users";
+import SemesterSettings from "@/pages/admin/semester-settings";
+import ODUsage from "@/pages/student/od-usage";
+
 
 function ProtectedRoute({ 
   children, 
@@ -163,6 +166,13 @@ function Router() {
           </AuthenticatedLayout>
         </ProtectedRoute>
       </Route>
+      <Route path="/student/od-usage">
+        <ProtectedRoute allowedRoles={["student"]}>
+          <AuthenticatedLayout>
+            <ODUsage />
+          </AuthenticatedLayout>
+        </ProtectedRoute>
+      </Route>
 
       <Route path="/staff">
         <ProtectedRoute allowedRoles={["staff"]}>
@@ -225,6 +235,13 @@ function Router() {
         <ProtectedRoute allowedRoles={["admin"]}>
           <AuthenticatedLayout>
             <ManageUsers />
+          </AuthenticatedLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/semester-settings">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AuthenticatedLayout>
+            <SemesterSettings />
           </AuthenticatedLayout>
         </ProtectedRoute>
       </Route>

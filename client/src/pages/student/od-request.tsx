@@ -51,8 +51,8 @@ export default function ODRequestPage() {
   });
 
   const { data: timetable } = useQuery<TimetableEntry[]>({
-    queryKey: ["/api/timetable", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/timetable", user?.username],
+    enabled: !!user?.username,
   });
 
   const submitMutation = useMutation({
@@ -60,7 +60,7 @@ export default function ODRequestPage() {
       const formData = new FormData();
       formData.append("dates", JSON.stringify(data.dates.map((d) => format(d, "yyyy-MM-dd"))));
       formData.append("reason", data.reason);
-      formData.append("studentId", user?._id || "");
+      formData.append("studentId", user?.username || "");
       formData.append("studentName", user?.name || "");
       formData.append("studentRollNumber", user?.rollNumber || "");
       if (selectedFile) {

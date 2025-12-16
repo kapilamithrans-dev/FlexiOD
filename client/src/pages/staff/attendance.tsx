@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,8 +23,17 @@ export default function StaffAttendance() {
   });
 
   const { data: attendanceData, isLoading } = useQuery<AttendanceSummary[]>({
-    queryKey: ["/api/staff/attendance", user?._id, selectedSubject],
+    queryKey: ["staff-attendance", user?._id, selectedSubject],
     enabled: !!user?._id,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedSubject && selectedSubject !== "all") {
+        params.append("subjectCode", selectedSubject);
+      }
+      const url = `/api/staff/attendance/${user?._id}${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await apiRequest("GET", url);
+      return response.json();
+    },
   });
 
   const getAttendanceColor = (percentage: number) => {

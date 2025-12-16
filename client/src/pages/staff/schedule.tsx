@@ -13,8 +13,8 @@ export default function StaffSchedule() {
   const { user } = useAuth();
 
   const { data: schedule, isLoading } = useQuery<StaffDutySchedule[]>({
-    queryKey: ["/api/staff/schedule", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/staff/schedule", user?.username],
+    enabled: !!user?.username,
   });
 
   const getScheduleCell = (dayIndex: number, period: number) => {

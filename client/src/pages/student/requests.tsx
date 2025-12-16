@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+
 import {
   FileText,
   Clock,
@@ -31,8 +32,8 @@ export default function StudentRequests() {
   const [selectedRequest, setSelectedRequest] = useState<ODRequest | null>(null);
 
   const { data: odRequests, isLoading } = useQuery<ODRequest[]>({
-    queryKey: ["/api/od-requests", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/od-requests", user?.username],
+    enabled: !!user?.username,
   });
 
   const downloadReportMutation = useMutation({
@@ -171,7 +172,8 @@ export default function StudentRequests() {
                   Details
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-2xl h-[85vh] flex flex-col">
+              <ScrollArea className="flex-1">
                 <DialogHeader>
                   <DialogTitle>OD Request Details</DialogTitle>
                   <DialogDescription>
@@ -248,9 +250,10 @@ export default function StudentRequests() {
                     </div>
                   </div>
                 )}
+              </ScrollArea>
               </DialogContent>
             </Dialog>
-            {request.overallStatus !== "pending" && (
+            {(
               <Button
                 variant="outline"
                 size="sm"

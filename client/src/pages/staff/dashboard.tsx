@@ -12,26 +12,26 @@ export default function StaffDashboard() {
   const { user } = useAuth();
 
   const { data: odRequests, isLoading: loadingRequests } = useQuery<ODRequest[]>({
-    queryKey: ["/api/staff/od-requests", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/staff/od-requests", user?.username],
+    enabled: !!user?.username,
   });
 
   const { data: todaySchedule, isLoading: loadingSchedule } = useQuery<StaffDutySchedule[]>({
-    queryKey: ["/api/staff/schedule/today", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/staff/schedule/today", user?.username],
+    enabled: !!user?.username,
   });
 
   const { data: studentsCount } = useQuery<{ count: number }>({
-    queryKey: ["/api/staff/students/count", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/staff/students/count", user?.username],
+    enabled: !!user?.username,
   });
 
   const pendingCount = odRequests?.filter((r) => 
-    r.staffApprovals.some((a) => a.staffId === user?._id && a.status === "pending")
+    r.staffApprovals.some((a) => a.staffId === user?.username && a.status === "pending")
   ).length ?? 0;
 
   const approvedCount = odRequests?.filter((r) =>
-    r.staffApprovals.some((a) => a.staffId === user?._id && a.status === "approved")
+    r.staffApprovals.some((a) => a.staffId === user?.username && a.status === "approved")
   ).length ?? 0;
 
   const getStatusBadge = (status: string) => {
@@ -195,7 +195,7 @@ export default function StaffDashboard() {
               <div className="space-y-3">
                 {odRequests
                   .filter((r) =>
-                    r.staffApprovals.some((a) => a.staffId === user?._id && a.status === "pending")
+                    r.staffApprovals.some((a) => a.staffId === user?.username && a.status === "pending")
                   )
                   .slice(0, 5)
                   .map((request, index) => (

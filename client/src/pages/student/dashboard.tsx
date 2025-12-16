@@ -12,13 +12,13 @@ export default function StudentDashboard() {
   const { user } = useAuth();
 
   const { data: odRequests, isLoading: loadingRequests } = useQuery<ODRequest[]>({
-    queryKey: ["/api/od-requests", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/od-requests", user?.username],
+    enabled: !!user?.username,
   });
 
   const { data: todayClasses, isLoading: loadingClasses } = useQuery<TimetableEntry[]>({
-    queryKey: ["/api/timetable/today", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/timetable/today", user?.username],
+    enabled: !!user?.username,
   });
 
   const pendingCount = odRequests?.filter((r) => r.overallStatus === "pending").length ?? 0;

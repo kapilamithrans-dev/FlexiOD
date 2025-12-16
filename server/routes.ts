@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import * as XLSX from "xlsx";
+// import * as XLSX from "xlsx";
+import QRCode from "qrcode";
 import PDFDocument from "pdfkit";
 import { User } from "./models/User";
 import { TimetableEntry } from "./models/Timetable";
@@ -11,6 +12,7 @@ import { StaffDutySchedule } from "./models/StaffDutySchedule";
 import { StudentStaffMapping } from "./models/StudentStaffMapping";
 import { ODRequest } from "./models/ODRequest";
 import { AttendanceRecord } from "./models/Attendance";
+import SemesterSettings from "./models/SemesterSettings";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -29,11 +31,32 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-function parseExcelOrCSV(filePath: string): any[] {
-  const workbook = XLSX.readFile(filePath);
+// ✅ NEW FUNCTION (replace entire parseExcelOrCSV)
+async function parseExcelOrCSV(filePath: string): Promise<any[]> {
+  const buffer = await fs.promises.readFile(filePath);
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.read(buffer, { 
+    type: 'buffer',
+    cellDates: false  // ✅ CRITICAL: prevents date auto-conversion
+  });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
-  return XLSX.utils.sheet_to_json(sheet);
+  
+  // ✅ CRITICAL: Force string conversion + time format
+  return XLSX.utils.sheet_to_json(sheet, { 
+    raw: false,      // Convert numbers to strings
+    dateNF: 'h:mm'   // Time format HH:MM
+  });
+}
+
+function formatExcelTime(value: any): string {
+  if (!value) return '';
+  
+  if (typeof value === 'string') return value;
+  
+  const hours = Math.floor(value * 24);
+  const minutes = Math.round((value * 24 * 60) % 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
 export async function registerRoutes(
@@ -75,7 +98,7 @@ export async function registerRoutes(
         subjects: user.subjects,
       };
 
-      res.status(201).json({ user: userResponse });
+      res.status(200).json({ user: userResponse });
     } catch (error: any) {
       console.error("Registration error:", error);
       res.status(500).json({ message: error.message || "Registration failed" });
@@ -182,6 +205,28 @@ export async function registerRoutes(
     }
   });
 
+  // Get current semester settings
+  app.get("/api/semester-settings", async (req, res) => {
+    const setting = await SemesterSettings.findOne().sort({ updatedAt: -1 });
+    if (!setting) return res.status(404).json({ message: 'Not set.' });
+    res.json(setting);
+  });
+
+  // Set/update semester settings (admin only -- add auth as needed)
+  app.post("/api/semester-settings", async (req, res) => {
+    const { semesterStart, semesterEnd, subjects } = req.body;
+    let setting = await SemesterSettings.findOne();
+    if (setting) {
+      setting.semesterStart = semesterStart;
+      setting.semesterEnd = semesterEnd;
+      setting.subjects = subjects;
+      await setting.save();
+    } else {
+      setting = await SemesterSettings.create({ semesterStart, semesterEnd, subjects });
+    }
+    res.json(setting);
+  });
+
   // OD Request routes
   app.post("/api/od-requests", upload.single("proof"), async (req: Request, res: Response) => {
     try {
@@ -265,16 +310,20 @@ export async function registerRoutes(
   app.patch("/api/od-requests/:requestId/respond", async (req: Request, res: Response) => {
     try {
       const { requestId } = req.params;
-      const { staffId, status, remarks } = req.body;
+      const { staffId, status, remarks, subjectCode } = req.body;
 
       const request = await ODRequest.findById(requestId);
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
       }
 
-      const approvalIndex = request.staffApprovals.findIndex(a => a.staffId === staffId);
+      // ✅ Find the specific approval by BOTH staffId AND subjectCode
+      const approvalIndex = request.staffApprovals.findIndex(a => 
+        a.staffId === staffId && a.subjectCode === subjectCode
+      );
+      
       if (approvalIndex === -1) {
-        return res.status(404).json({ message: "Staff approval not found" });
+        return res.status(404).json({ message: "Staff approval not found for this subject" });
       }
 
       request.staffApprovals[approvalIndex].status = status;
@@ -295,35 +344,107 @@ export async function registerRoutes(
     }
   });
 
+  // Import statements should be at the top of the file
+  // import QRCode from 'qrcode'; // Move this to the top if used
+
   app.get("/api/od-requests/:requestId/report", async (req: Request, res: Response) => {
     try {
       const { requestId } = req.params;
       const request = await ODRequest.findById(requestId);
-      
+  
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
       }
 
-      const doc = new PDFDocument({ margin: 50 });
-      
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=OD_Report_${requestId}.pdf`);
-      
-      doc.pipe(res);
+      const qrText = `Name: ${request.studentName}
+                      Roll Number: ${request.studentRollNumber}
+                      ID: ${request._id}`;
 
+      const qrDataUrl = await QRCode.toDataURL(qrText, {
+        errorCorrectionLevel: "H",
+        margin: 1,
+        scale: 6
+      });
+                      
+      const doc = new PDFDocument({ margin: 50 });
+  
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=OD_Report_${requestId}.pdf`
+      );
+  
+      doc.pipe(res);
+  
+      // ================= WATERMARK (FIXED) =================
+      const addWatermark = (doc: PDFKit.PDFDocument) => {
+        doc.save();
+      
+        const watermarkText1 = "Rajalakshmi Engineering College";
+        const watermarkText2 = "Department of AI & DS";
+      
+        const positions = [
+          { x: 150, y: 300 },
+          { x: 300, y: 500 },
+          { x: 150, y: 700 }
+        ];
+      
+        positions.forEach(({ x, y }) => {
+          doc.save();
+      
+          doc.translate(x, y);
+          doc.rotate(-45);
+      
+          doc
+            .fontSize(28)
+            .fillColor("gray")
+            .opacity(0.1)
+            .text(watermarkText1, 0, 0, { width: 1000 });
+      
+          doc
+            .fontSize(22)
+            .text(watermarkText2, 20, 40, { width: 1000 });
+      
+          doc.restore();
+        });
+      
+        // 🔥 CRITICAL RESET (this fixes page 2+)
+        doc
+          .opacity(1)
+          .fillColor("black")
+          .fontSize(12);   // ✅ reset default text size
+      
+        doc.restore();
+      };
+      
+      
+      
+      // ====================================================
+  
+      // Add watermark to first page and all new pages
+      doc.on("pageAdded", () => addWatermark(doc));
+      addWatermark(doc);
+  
+      // ================= REPORT CONTENT =================
       doc.fontSize(20).text("ON-DUTY REPORT", { align: "center" });
       doc.moveDown();
-      
-      doc.fontSize(12).text(`Date Generated: ${new Date().toLocaleDateString()}`, { align: "right" });
+  
+      doc
+        .fontSize(12)
+        .text(`Date Generated: ${new Date().toLocaleDateString()}`, {
+          align: "right"
+        });
+  
       doc.moveDown(2);
-
+  
       doc.fontSize(14).text("Student Information", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
       doc.text(`Name: ${request.studentName}`);
       doc.text(`Roll Number: ${request.studentRollNumber}`);
+      
       doc.moveDown();
-
+      
       doc.fontSize(14).text("OD Details", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
@@ -331,38 +452,74 @@ export async function registerRoutes(
       doc.text(`Reason: ${request.reason}`);
       doc.text(`Overall Status: ${request.overallStatus.toUpperCase()}`);
       doc.moveDown();
-
+  
       doc.fontSize(14).text("Staff Approvals", { underline: true });
       doc.moveDown(0.5);
       doc.fontSize(12);
-      
+  
       request.staffApprovals.forEach((approval, index) => {
-        const statusText = approval.status === "approved" 
-          ? "APPROVED" 
-          : approval.status === "rejected" 
-            ? "REJECTED" 
+        const statusText =
+          approval.status === "approved"
+            ? "APPROVED"
+            : approval.status === "rejected"
+            ? "REJECTED"
             : "PENDING";
-        
-        doc.text(`${index + 1}. ${approval.staffName} (${approval.subjectCode} - ${approval.subjectName})`);
+  
+        doc.text(
+          `${index + 1}. ${approval.staffName} (${approval.subjectCode} - ${approval.subjectName})`
+        );
         doc.text(`   Status: ${statusText}`);
-        if (approval.remarks) {
-          doc.text(`   Remarks: ${approval.remarks}`);
-        }
-        if (approval.respondedAt) {
-          doc.text(`   Responded: ${new Date(approval.respondedAt).toLocaleDateString()}`);
-        }
-        doc.moveDown(0.5);
-      });
+        if (approval.remarks) doc.text(`   Remarks: ${approval.remarks}`);
+        if (approval.respondedAt)
+          doc.text(
+            `   Responded: ${new Date(approval.respondedAt).toLocaleDateString()}`
+          );
+          doc.moveDown(0.5);
+        });
+        
+        doc.moveDown(2);
+      doc
+        .fontSize(10)
+        .text("Document must be acknowledged by Head of The Department.", {
+          align: "center"
+        });
+        doc
+        .moveDown(0.5)
+        .text("Else document is considered void.", { align: "center" });
+            
+        
+        // ================= SIGNATURE =================
+        const imagePath = path.join(process.cwd(), "assets", "hod-signature.jpg");
+        
+        if (fs.existsSync(imagePath)) {
+        const xPos = doc.page.width - doc.page.margins.right - 160;
+        const yPos = doc.page.height - doc.page.margins.bottom - 130;
+  
+        doc.image(imagePath, xPos, yPos, { width: 150, height: 100 });
+      }
+      // ====================================================
 
-      doc.moveDown(2);
-      doc.fontSize(10).text("This is a system-generated document.", { align: "center" });
+      const qrX = doc.page.margins.left;
+      const qrY = doc.page.height - doc.page.margins.bottom - 100;
 
+      doc.image(qrDataUrl, qrX, qrY, { width: 80 });
+
+      doc
+        .fontSize(8)
+        .fillColor("gray")
+        .opacity(1)
+        .text("Scan QR for document details", qrX, qrY + 82);
+
+      doc.fontSize(3).opacity(0.08).text(`Name: ${request.studentName} Roll Number: ${request.studentRollNumber} id: ${request._id}`, 60, 720);
       doc.end();
     } catch (error: any) {
       console.error("Report generation error:", error);
       res.status(500).json({ message: error.message });
     }
   });
+  
+  
+  
 
   // Attendance routes
   app.get("/api/staff/attendance/:staffId", async (req: Request, res: Response) => {
@@ -464,7 +621,7 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, message: "No file uploaded" });
       }
 
-      const data = parseExcelOrCSV(req.file.path);
+      const data = await parseExcelOrCSV(req.file.path);
       const errors: string[] = [];
       let recordsProcessed = 0;
 
@@ -478,8 +635,8 @@ export async function registerRoutes(
             subjectName: row.SubjectName || row.subjectName,
             staffId: row.StaffID || row.staffId,
             staffName: row.StaffName || row.staffName,
-            startTime: row.StartTime || row.startTime,
-            endTime: row.EndTime || row.endTime,
+            startTime: formatExcelTime(row.StartTime || row.startTime),
+            endTime: formatExcelTime(row.EndTime || row.endTime), 
           });
 
           await TimetableEntry.findOneAndUpdate(
@@ -518,7 +675,7 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, message: "No file uploaded" });
       }
 
-      const data = parseExcelOrCSV(req.file.path);
+      const data = await parseExcelOrCSV(req.file.path);
       const errors: string[] = [];
       let recordsProcessed = 0;
 
@@ -567,7 +724,7 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, message: "No file uploaded" });
       }
 
-      const data = parseExcelOrCSV(req.file.path);
+      const data = await parseExcelOrCSV(req.file.path);
       const errors: string[] = [];
       let recordsProcessed = 0;
 
@@ -579,8 +736,8 @@ export async function registerRoutes(
             period: parseInt(row.Period || row.period),
             subjectCode: row.SubjectCode || row.subjectCode,
             subjectName: row.SubjectName || row.subjectName,
-            startTime: row.StartTime || row.startTime,
-            endTime: row.EndTime || row.endTime,
+            startTime: formatExcelTime(row.StartTime || row.startTime),
+            endTime: formatExcelTime(row.EndTime || row.endTime),
           });
 
           await StaffDutySchedule.findOneAndUpdate(
@@ -615,7 +772,19 @@ export async function registerRoutes(
 
   // Serve uploaded files
   app.use("/uploads", (req, res, next) => {
-    res.sendFile(path.join(uploadsDir, req.path));
+    const safePath = path.normalize(req.path).replace(/^(\.\.[/\\])+/, "");
+    const filePath = path.join(uploadsDir, safePath);
+
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(400).json({ message: "Invalid file path" });
+    }
+
+    fs.access(filePath, fs.constants.R_OK, (err) => {
+      if (err) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      res.sendFile(filePath);
+    });
   });
 
   return httpServer;

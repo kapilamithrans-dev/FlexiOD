@@ -13,8 +13,8 @@ export default function StudentTimetable() {
   const { user } = useAuth();
 
   const { data: timetable, isLoading } = useQuery<TimetableEntry[]>({
-    queryKey: ["/api/timetable", user?._id],
-    enabled: !!user?._id,
+    queryKey: ["/api/timetable", user?.username],
+    enabled: !!user?.username,
   });
 
   const getTimetableCell = (dayIndex: number, period: number) => {
