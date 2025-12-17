@@ -96,46 +96,76 @@ export default function StaffODRequests() {
     return { used: usedDays, total: totalClasses, percentage };
   };
 
-  const updateRequestMutation = useMutation({
-    mutationFn: async ({ requestId, status, remarks, subjectCode }: { requestId: string; status: "approved" | "rejected"; remarks: string; subjectCode?: string }) => {
-      const response = await apiRequest("PATCH", `/api/od-requests/${requestId}/respond`, {
+  
+const updateRequestMutation = useMutation({
+  mutationFn: async ({
+    requestId,
+    status,
+    remarks,
+    subjectCode,
+  }: {
+    requestId: string;
+    status: "approved" | "rejected";
+    remarks: string;
+    subjectCode?: string;
+  }) => {
+    const response = await apiRequest(
+      "PATCH",
+      `/api/od-requests/${requestId}/respond`,
+      {
         staffId: user?.username,
         status,
         remarks,
         subjectCode,
-      });
-      return response.json();
-    },
-    onSuccess: (updatedRequest, variables) => {
-      toast({
-        title: variables.status === "approved" ? "Approved" : "Rejected",
-        description: `${variables.subjectCode || 'Request'} ${variables.status}.`,
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: ["/api/staff/od-requests", user?.username],
-      });
-            
-      if (selectedRequest && updatedRequest) {
-        setSelectedRequest(updatedRequest);
       }
-      
-      if (variables.subjectCode) {
-        setRemarksPerSubject(prev => {
-          const newRemarks = { ...prev };
-          delete newRemarks[variables.subjectCode!];
-          return newRemarks;
-        });
+    );
+    return response.json();
+  },
+
+  onSuccess: (updatedRequest, variables) => {
+    toast({
+      title: variables.status === "approved" ? "Approved" : "Rejected",
+      description: `${variables.subjectCode || "Request"} ${variables.status}.`,
+    });
+
+    // 🔥 THIS IS THE KEY FIX
+    queryClient.setQueryData(
+      ["/api/staff/od-requests", user?.username],
+      (oldData: any[] | undefined) => {
+        if (!oldData) return oldData;
+
+        return oldData.map((req) =>
+          req._id === updatedRequest._id ? updatedRequest : req
+        );
       }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Action Failed",
-        description: error.message,
-        variant: "destructive",
+    );
+
+    // Optional safety refetch (not mandatory)
+    queryClient.invalidateQueries({
+      queryKey: ["/api/staff/od-requests", user?.username],
+    });
+
+    if (selectedRequest) {
+      setSelectedRequest(updatedRequest);
+    }
+
+    if (variables.subjectCode) {
+      setRemarksPerSubject((prev) => {
+        const newRemarks = { ...prev };
+        delete newRemarks[variables.subjectCode];
+        return newRemarks;
       });
-    },
-  });
+    }
+  },
+
+  onError: (error: Error) => {
+    toast({
+      title: "Action Failed",
+      description: error.message,
+      variant: "destructive",
+    });
+  },
+});
 
   const getMyApprovals = (request: ODRequest) => {
     if (!user?.username) return [];
