@@ -43,7 +43,8 @@ export default function UploadTimetables() {
         });
 
         xhr.open("POST", "/api/admin/upload/timetables");
-        xhr.send(formData);
+        xhr.send(formData);  // 🔴 REQUIRED
+        xhr.send(formData); 
       });
     },
     onSuccess: (data) => {
@@ -121,6 +122,7 @@ export default function UploadTimetables() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    setSelectedFile(null);
   };
 
   return (

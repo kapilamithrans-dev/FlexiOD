@@ -21,6 +21,18 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/stats"],
     enabled: !!user,
+    queryFn: async () => {
+      const res = await fetch(
+        "https://flexiod.onrender.com/api/admin/stats",
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   return (

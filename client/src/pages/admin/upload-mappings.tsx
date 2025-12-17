@@ -44,6 +44,8 @@ export default function UploadMappings() {
 
         xhr.open("POST", "/api/admin/upload/mappings");
         xhr.send(formData);
+        xhr.withCredentials = true;   // 🔴 REQUIRED
+        xhr.send(formData);
       });
     },
     onSuccess: (data) => {
@@ -102,6 +104,7 @@ export default function UploadMappings() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    setSelectedFile(null);
   };
 
   return (

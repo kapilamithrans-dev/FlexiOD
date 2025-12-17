@@ -43,6 +43,7 @@ export default function UploadDuty() {
         });
 
         xhr.open("POST", "/api/admin/upload/duty");
+        xhr.withCredentials = true;   // 🔴 REQUIRED
         xhr.send(formData);
       });
     },
@@ -102,6 +103,8 @@ export default function UploadDuty() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    setSelectedFile(null);
+
   };
 
   return (
