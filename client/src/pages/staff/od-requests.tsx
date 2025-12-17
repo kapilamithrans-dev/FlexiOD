@@ -96,7 +96,7 @@ export default function StaffODRequests() {
     return { used: usedDays, total: totalClasses, percentage };
   };
 
-  
+
 const updateRequestMutation = useMutation({
   mutationFn: async ({
     requestId,
@@ -152,7 +152,6 @@ const updateRequestMutation = useMutation({
     if (variables.subjectCode) {
       setRemarksPerSubject((prev) => {
         const newRemarks = { ...prev };
-        delete newRemarks[variables.subjectCode];
         return newRemarks;
       });
     }

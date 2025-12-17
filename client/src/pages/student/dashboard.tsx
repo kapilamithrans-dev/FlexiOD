@@ -14,11 +14,35 @@ export default function StudentDashboard() {
   const { data: odRequests, isLoading: loadingRequests } = useQuery<ODRequest[]>({
     queryKey: ["/api/od-requests", user?.username],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/od-requests/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   const { data: todayClasses, isLoading: loadingClasses } = useQuery<TimetableEntry[]>({
     queryKey: ["/api/timetable/today", user?.username],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/timetable/today/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   const pendingCount = odRequests?.filter((r) => r.overallStatus === "pending").length ?? 0;

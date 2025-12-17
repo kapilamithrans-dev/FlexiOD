@@ -34,11 +34,28 @@ export default function StudentRequests() {
   const { data: odRequests, isLoading } = useQuery<ODRequest[]>({
     queryKey: ["/api/od-requests", user?.username],
     enabled: !!user?.username,
+     refetchOnWindowFocus: true,
+  refetchInterval: 15_000, 
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/od-requests/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   const downloadReportMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const response = await fetch(`/api/od-requests/${requestId}/report`);
+      const response = await fetch(
+          `/api/od-requests/${requestId}/report`,
+          { credentials: "include" }
+        );
       if (!response.ok) throw new Error("Failed to generate report");
       
       const blob = await response.blob();

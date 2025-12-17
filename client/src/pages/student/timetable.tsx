@@ -15,6 +15,18 @@ export default function StudentTimetable() {
   const { data: timetable, isLoading } = useQuery<TimetableEntry[]>({
     queryKey: ["/api/timetable", user?.username],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/timetable/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   const getTimetableCell = (dayIndex: number, period: number) => {

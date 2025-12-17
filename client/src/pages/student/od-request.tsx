@@ -53,6 +53,18 @@ export default function ODRequestPage() {
   const { data: timetable } = useQuery<TimetableEntry[]>({
     queryKey: ["/api/timetable", user?.username],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/timetable/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch student timetable");
+      }
+
+      return res.json();
+    },
   });
 
   const submitMutation = useMutation({
@@ -70,6 +82,7 @@ export default function ODRequestPage() {
       const response = await fetch("/api/od-requests", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -84,7 +97,8 @@ export default function ODRequestPage() {
         title: "Request Submitted",
         description: "Your OD request has been sent to the relevant staff members.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/od-requests"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/od-requests",user?.username] });
       setLocation("/student/requests");
     },
     onError: (error: Error) => {
