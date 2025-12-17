@@ -59,13 +59,12 @@ export default function StaffODRequests() {
   });
 
   const { data: odRequests, isLoading } = useQuery<ODRequest[]>({
-    queryKey: [`/api/staff/od-requests/${user?.username}`],
+    queryKey: ["/api/staff/od-requests", user?.username],
     enabled: !!user?.username,
     queryFn: async () => {
-      const res = await fetch(
-        `https://flexiod.onrender.com/api/staff/od-requests/${user?.username}`,
-        { credentials: "include" }
-      );
+          const res = await fetch(`/api/staff/od-requests/${user?.username}`, {
+      credentials: "include",
+    });
 
       if (!res.ok) {
         throw new Error("Failed to fetch Odrequest");
@@ -113,8 +112,10 @@ export default function StaffODRequests() {
         description: `${variables.subjectCode || 'Request'} ${variables.status}.`,
       });
       
-      queryClient.invalidateQueries({ queryKey: ["/api/staff/od-requests"] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/staff/od-requests", user?.username],
+      });
+            
       if (selectedRequest && updatedRequest) {
         setSelectedRequest(updatedRequest);
       }
