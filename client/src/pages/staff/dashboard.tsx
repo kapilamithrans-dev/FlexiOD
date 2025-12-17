@@ -15,6 +15,7 @@ export default function StaffDashboard() {
     queryKey: ["/api/staff/od-requests", user?.username],
     enabled: !!user?.username,
   });
+  console.log(odRequests);
 
   const { data: todaySchedule, isLoading: loadingSchedule } = useQuery<StaffDutySchedule[]>({
     queryKey: ["/api/staff/schedule/today", user?.username],
