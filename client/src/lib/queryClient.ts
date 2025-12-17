@@ -12,7 +12,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch("https://flexi-easw3im0a-kapilamithrans-projects.vercel.app/", {
+  const res = await fetch("https://flexi-od.vercel.app/", {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -30,7 +30,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const path = queryKey.join("/");
-    const res = await fetch(`https://flexi-easw3im0a-kapilamithrans-projects.vercel.app/${path}`, {
+    const res = await fetch(`https://flexi-od.vercel.app/${path}`, {
       credentials: "include",
     });
 
