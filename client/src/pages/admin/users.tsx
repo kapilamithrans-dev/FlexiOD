@@ -13,21 +13,21 @@ import type { User as UserType } from "@shared/schema";
 export default function ManageUsers() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: users, isLoading } = useQuery<UserType[]>({
-    queryKey: ["/api/admin/users"],
-    queryFn: async () => {
-      const res = await fetch(
-        "https://flexiod.onrender.com/api/admin/users",
-        { credentials: "include" }
-      );
+ const { data: users, isLoading} = useQuery<UserType[]>({
+      queryKey: ["/api/admin/users"],
+      queryFn: async () => {
+        const res = await fetch("/api/admin/users", {
+          credentials: "include",
+        });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch users");
-      }
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Failed to fetch users");
+        }
 
-      return res.json();
-    },
-  });
+        return res.json();
+      },
+    });
 
   const getInitials = (name: string) => {
     return name
