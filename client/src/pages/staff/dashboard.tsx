@@ -12,19 +12,55 @@ export default function StaffDashboard() {
   const { user } = useAuth();
 
   const { data: odRequests, isLoading: loadingRequests } = useQuery<ODRequest[]>({
-    queryKey: ["/api/staff/od-requests", user?.username],
+    queryKey: [`/api/staff/od-requests/${user?.username}`],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/staff/od-requests/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff odRequests");
+      }
+
+      return res.json();
+    },
   });
   console.log(odRequests);
 
   const { data: todaySchedule, isLoading: loadingSchedule } = useQuery<StaffDutySchedule[]>({
-    queryKey: ["/api/staff/schedule/today", user?.username],
+    queryKey: [`/api/staff/schedule/today/${user?.username}`],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/staff/schedule/today/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff todaySchedule");
+      }
+
+      return res.json();
+    },
   });
 
   const { data: studentsCount } = useQuery<{ count: number }>({
-    queryKey: ["/api/staff/students/count", user?.username],
+    queryKey: [`/api/staff/students/count/${user?.username}`],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/staff/students/count/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff studentCount");
+      }
+
+      return res.json();
+    },
   });
 
   const pendingCount = odRequests?.filter((r) => 

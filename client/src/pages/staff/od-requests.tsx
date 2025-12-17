@@ -59,8 +59,20 @@ export default function StaffODRequests() {
   });
 
   const { data: odRequests, isLoading } = useQuery<ODRequest[]>({
-    queryKey: ["/api/staff/od-requests", user?.username],
+    queryKey: [`/api/staff/od-requests/${user?.username}`],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/staff/od-requests/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch Odrequest");
+      }
+
+      return res.json();
+    },
   });
 
   // Single helper function to calculate OD usage
