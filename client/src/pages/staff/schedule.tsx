@@ -13,7 +13,7 @@ export default function StaffSchedule() {
   const { user } = useAuth();
 
   const { data: schedule, isLoading } = useQuery<StaffDutySchedule[]>({
-    queryKey: ["/api/staff/schedule", user?.username],
+    queryKey: [`/api/staff/schedule/${user?.username}`],
     enabled: !!user?.username,
   });
 
