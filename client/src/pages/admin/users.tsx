@@ -15,6 +15,18 @@ export default function ManageUsers() {
 
   const { data: users, isLoading } = useQuery<UserType[]>({
     queryKey: ["/api/admin/users"],
+    queryFn: async () => {
+      const res = await fetch(
+        "https://flexiod.onrender.com/api/admin/users",
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch users");
+      }
+
+      return res.json();
+    },
   });
 
   const getInitials = (name: string) => {
