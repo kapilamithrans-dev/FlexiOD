@@ -26,3 +26,71 @@ A web-based admin panel for managing users and uploading student timetables. Bui
 
 ## Project Structure
 
+/frontend # React application
+/components # UI components (Card, Badge, Tabs, Avatar, etc.)
+/pages # Pages like ManageUsers.tsx, UploadTimetables.tsx
+/hooks # Custom hooks (use-toast, etc.)
+App.tsx # Main application entry
+
+/backend # Node.js/Express backend
+/models # Mongoose models (User, Timetable)
+/routes # Express routes (users, timetables)
+server.ts # Express server setup
+
+
+---
+
+## Tech Stack
+
+- **Frontend:** React, React Query, TypeScript, Tailwind CSS, Lucide Icons
+- **Backend:** Node.js, Express, MongoDB, Mongoose
+- **Other:** React Hook Form, Toast notifications
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
+
+git clone https://github.com/yourusername/flexi-timetable-admin.git
+cd flexi-timetable-admin
+
+2. Install dependencies
+
+npm install
+
+
+3. Environment Variables
+
+Create a .env file in backend/:
+
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/flexi-timetable
+PORT=5000
+
+4. Run the application
+
+npm run dev
+
+Visit http://localhost:3000 to access the admin panel
+
+
+Usage
+
+- Go to Manage Users to view, filter, and browse users.
+- Go to Upload Timetables to upload student timetable files.
+- Download the template for correct column formatting.
+- Monitor upload progress and errors in real-time.
+
+
+Troubleshooting
+
+- Users not loading
+- Ensure backend is running and accessible
+- Check CORS headers if frontend is on a different domain
+- Use relative URL /api/admin/users in frontend fetch
+
+Upload errors
+
+- Ensure the file matches template columns
+- Do not include _id in upload CSV/XLSX
+- Row-level errors will be displayed in the UI
