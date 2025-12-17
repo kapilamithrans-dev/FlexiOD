@@ -15,6 +15,18 @@ export default function StaffSchedule() {
   const { data: schedule, isLoading } = useQuery<StaffDutySchedule[]>({
     queryKey: [`/api/staff/schedule/${user?.username}`],
     enabled: !!user?.username,
+    queryFn: async () => {
+      const res = await fetch(
+        `https://flexiod.onrender.com/api/staff/schedule/${user?.username}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch staff schedule");
+      }
+
+      return res.json();
+    },
   });
 
   const getScheduleCell = (dayIndex: number, period: number) => {
