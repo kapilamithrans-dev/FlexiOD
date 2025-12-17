@@ -72,10 +72,13 @@ PORT=5000
 npm run dev
 
 Visit http://localhost:3000 to access the admin panel
-Visit https://flexiod.onrender.com to access demo pages of Admin, Student and Staff
+
+Visit https://flexiod.onrender.com to access demo pages of Admin, Student and Staff.
+
 Sample Credentials:
-Admin : Admin - 12345678
-username of other staff and students is available in Admin. (password is 12345678 for all)
+- Admin : Admin - 12345678
+- username of other staff and students is available in Admin. (password is 12345678 for all)
+
 NOTE : The demo page is learning purpose only.
 
 
